@@ -11,13 +11,13 @@ public class Network {
 	private final Integer numberOfLayers;
 	private final List<Integer> sizeOfLayers;
 	private final List<FMatrixRMaj> biases;
-//	private FMatrixRMaj weights;
+	private final List<FMatrixRMaj> weights;
 	
 	public Network(final List<Integer> sizeOfLayers) {
 		this.numberOfLayers = sizeOfLayers.size();
 		this.sizeOfLayers = sizeOfLayers;
 		this.biases = generateBiases();
-//		this.weights = getWeights();
+		this.weights = getWeights();
 	}
 
 	private List<FMatrixRMaj> generateBiases() {
@@ -30,6 +30,20 @@ public class Network {
 			biases.set(i-1, layerBias);
 		}
 		return biases;
+	}
+	
+	private List<FMatrixRMaj> getWeights() {
+		final List<FMatrixRMaj> weights = new ArrayList<FMatrixRMaj>();
+		for(int i = 0; i < numberOfLayers-1; i++) {
+			final FMatrixRMaj layerBias = new FMatrixRMaj(sizeOfLayers.get(i),sizeOfLayers.get(i+1));
+			for(int j = 0; j < layerBias.getNumRows(); j++){
+				for(int k = 0; k < layerBias.getNumCols(); k++) {
+					layerBias.set(j, k, (float) GAUSSIAN_GENERATOR.nextGaussian(0,1));
+				}
+			}
+			biases.set(i-1, layerBias);
+		}
+		return weights;
 	}
 
 	public Integer getNumberOfLayers() {
@@ -52,10 +66,22 @@ public class Network {
 		this.biases.set(layer, biases);
 	}
 	
-//	private float[][] getWeights() {
-//		final float[][] data = new float[10][10];
-//		// TODO Auto-generated method stub
-//		return data;
-//	}
+	public List<FMatrixRMaj> getAllWeights() {
+		return weights;
+	}
+	
+	public FMatrixRMaj getWeightsInLayer(int layer) {
+		return weights.get(layer);
+	}
+
+	public void setWeightsInLayer(int layer, FMatrixRMaj weights) {
+		this.weights.set(layer, weights);
+	}
+	
+	@Override
+	public String toString() {
+		return "Network: " + super.toString() +
+			   ", Number of Layers: " + this.numberOfLayers;
+	}
 	
 }
