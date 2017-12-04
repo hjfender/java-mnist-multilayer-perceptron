@@ -7,6 +7,10 @@ import org.ejml.dense.row.CommonOps_FDRM;
 import neural.network.exceptions.InvalidInputException;
 import neural.network.exceptions.LayerDoesNotExistException;
 
+/**
+ * @author HEFE002
+ * Encapsulates all the relevant operations on a multilayer perception.
+ */
 public class Operations {
 	
 	/**
