@@ -33,13 +33,6 @@
 		  <artifactId>ejml-all</artifactId>
 		  <version>0.32</version>
 		</dependency>
-		
-		<!-- MNIST Dataset -->
-		<dependency>
-		    <groupId>org.knowm.datasets</groupId>
-		    <artifactId>datasets-mnist</artifactId>
-		    <version>2.1.0</version>
-		</dependency>
   </dependencies>
   
 </project>
