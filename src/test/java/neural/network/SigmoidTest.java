@@ -24,4 +24,22 @@ public class SigmoidTest {
 		assertEquals(0.5, output.get(5,0), 0.000001);
 		assertEquals(0.2689414, output.get(6,0), 0.000001);
 	}
+	
+	@Test
+	public void testSigmoid_Prime() {
+		float data[][] = {{1.0f}, {0.5f}, {0.25f}, {0.125f}, {0.0625f}, {0.0f}, {-1.0f}};
+		FMatrixRMaj input = new FMatrixRMaj(data);
+		
+		System.out.println("Testing Sigmoid Prime...\n");
+		
+		FMatrixRMaj output = Operations.sigmoid_prime(input);
+		
+		assertEquals(0.196612, output.get(0,0), 0.000001);
+		assertEquals(0.235004, output.get(1,0), 0.000001);
+		assertEquals(0.246134, output.get(2,0), 0.000001);
+		assertEquals(0.249026, output.get(3,0), 0.000001);
+		assertEquals(0.249756, output.get(4,0), 0.000001);
+		assertEquals(0.25, output.get(5,0), 0.000001);
+		assertEquals(0.196612, output.get(6,0), 0.000001);
+	}
 }

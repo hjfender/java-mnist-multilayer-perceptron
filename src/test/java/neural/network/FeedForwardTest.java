@@ -40,7 +40,7 @@ public class FeedForwardTest {
 		
 		FMatrixRMaj output = Operations.feedForward(input, network);
 
-		assertEquals(0.93245333, output.get(0,0), 0.000001);
-		assertEquals(0.6992544, output.get(1,0), 0.000001);
+		assertEquals(0.57005620, output.get(0,0), 0.000001);
+		assertEquals(0.45525008, output.get(1,0), 0.000001);
 	}
 }
