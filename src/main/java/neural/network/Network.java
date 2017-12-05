@@ -12,10 +12,6 @@ import neural.network.exceptions.LayerDoesNotExistException;
 import neural.network.exceptions.LayerTooSmallException;
 import neural.network.exceptions.NetworkTooSmallException;
 
-/**
- * @author HEFE002
- * Encapsulates the properties and initialization of a multilayer perceptron.
- */
 public class Network {
 
 	private static final RandomDataGenerator GAUSSIAN_GENERATOR = new RandomDataGenerator();
