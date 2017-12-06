@@ -155,26 +155,26 @@ public class Operations {
 		//Backpropogate
 		for(Image img : batch) {
 			//Change in nablaB and nablaW (i.e. Deltas)
-			List<FMatrixRMaj>[] result = backprop(network, img);
+			List<List<FMatrixRMaj>> result = backprop(network, img);
 			//add change to nablaB and nablaW
-			for(int i = 0; i < network.getNumberOfLayers(); i++) {
+			for(int i = 0; i < network.getNumberOfLayers()-1; i++) {
 				FMatrixRMaj tempNablaB = nablaB.get(i).copy();
-				CommonOps_FDRM.add(tempNablaB,result[0].get(i),tempNablaB);
+				CommonOps_FDRM.add(tempNablaB, result.get(0).get(i), tempNablaB);
 				nablaB.set(i, tempNablaB);
 				FMatrixRMaj tempNablaW = nablaW.get(i).copy();
-				CommonOps_FDRM.add(tempNablaW,result[0].get(i),tempNablaW);
-				nablaB.set(i, tempNablaW);
+				CommonOps_FDRM.add(tempNablaW, result.get(1).get(i), tempNablaW);
+				nablaW.set(i, tempNablaW);
 			}
 		}
 		//Update weights and biases
-		for(int i = 0; i < network.getNumberOfLayers(); i++) {
+		for(int i = 0; i < network.getNumberOfLayers()-1; i++) {
 			FMatrixRMaj newBiases = nablaB.get(i).copy();
 			CommonOps_FDRM.scale(eta/batch.size(), newBiases);
-			CommonOps_FDRM.add(network.getBiasesInLayer(i), newBiases, newBiases);
+			CommonOps_FDRM.subtract(network.getBiasesInLayer(i), newBiases, newBiases);
 			network.setBiasInLayer(i, newBiases);
 			FMatrixRMaj newWeights = nablaW.get(i).copy();
 			CommonOps_FDRM.scale(eta/batch.size(), newWeights);
-			CommonOps_FDRM.add(network.getWeightsInLayer(i), newWeights, newWeights);
+			CommonOps_FDRM.subtract(network.getWeightsInLayer(i), newWeights, newWeights);
 			network.setWeightsInLayer(i, newWeights);
 		}
 	}
@@ -185,7 +185,7 @@ public class Operations {
 	 * ``self.biases`` and ``self.weights``.
 	 * @throws LayerDoesNotExistException 
 	 */
-	private static List<FMatrixRMaj>[] backprop(final Network network, final Image img) throws LayerDoesNotExistException {
+	private static List<List<FMatrixRMaj>> backprop(final Network network, final Image img) throws LayerDoesNotExistException {
 		//Initialize gradient of biases to all zeros
 		List<FMatrixRMaj> nablaB = new ArrayList<FMatrixRMaj>();
 		for(FMatrixRMaj layer : network.getAllBiases()) {
@@ -200,49 +200,54 @@ public class Operations {
 			entry.zero();
 			nablaW.add(entry);
 		}
+		
 		//Feedforward
 		FMatrixRMaj activation = img.getVector();
 		List<FMatrixRMaj> activations = new ArrayList<FMatrixRMaj>(); //List to store all the activations, layer by layer
 		activations.add(activation);
 		List<FMatrixRMaj> zs = new ArrayList<FMatrixRMaj>(); //List to store all the z vectors, layer by layer
-		for(int i = 0; i < network.getNumberOfLayers(); i++) {
+		for(int i = 0; i < network.getNumberOfLayers()-1; i++) {
 			FMatrixRMaj z = network.getBiasesInLayer(i).copy();
-			CommonOps_FDRM.multAdd(network.getWeightsInLayer(i),activation,z);
+			CommonOps_FDRM.multAdd(network.getWeightsInLayer(i), activation, z);
 			zs.add(z);
 			activation = sigmoid(z);
 			activations.add(activation);
 		}
+		
 		//Backward pass
 		FMatrixRMaj y = new FMatrixRMaj(network.getSizeOfLayers().get(network.getNumberOfLayers()-1),1);
 		y.zero();
 		y.set(img.getLabel(), 0, 1.0f);
 		FMatrixRMaj delta = nablaB.get(nablaB.size()-1).copy();
-		CommonOps_FDRM.mult(cost_derivative(activations.get(activations.size()-1), y), sigmoid_prime(zs.get(zs.size()-1)), delta);
-		nablaB.set(nablaB.size()-1, delta);
-		FMatrixRMaj w = network.getWeightsInLayer(nablaW.size()-1).copy();
+		CommonOps_FDRM.elementMult(cost_derivative(activations.get(activations.size()-1), y), sigmoid_prime(zs.get(zs.size()-1)), delta);
+		FMatrixRMaj deltaCopy = delta.copy(); //otherwise the value in the list changes later
+		nablaB.set(nablaB.size()-1, deltaCopy);
+		FMatrixRMaj w = network.getWeightsInLayer(network.getNumberOfLayers()-2).copy();
 		FMatrixRMaj activationTransposed = activations.get(activations.size()-2);
 		CommonOps_FDRM.transpose(activationTransposed);
 		CommonOps_FDRM.mult(delta, activationTransposed, w);
 		nablaW.set(nablaW.size()-1, w);
 		
-		for(int i = network.getNumberOfLayers()-2; i > 1; i++) {
-			FMatrixRMaj sp = sigmoid_prime(zs.get(i));
-			FMatrixRMaj new_delta = new FMatrixRMaj(network.getWeightsInLayer(i).getNumRows(), delta.getNumCols());
-			CommonOps_FDRM.mult(network.getWeightsInLayer(i), delta, new_delta);
-			delta.reshape(new_delta.getNumRows(), sp.getNumCols());
-			nablaB.set(i,delta);
-			w = network.getWeightsInLayer(i-1).copy();
-			activationTransposed = activations.get(i+1);
+		for(int i = 2; i < network.getNumberOfLayers(); i++) {
+			FMatrixRMaj sp = sigmoid_prime(zs.get(zs.size()-i));
+			FMatrixRMaj weightsTransposed = network.getWeightsInLayer(network.getNumberOfLayers()-i).copy();
+			CommonOps_FDRM.transpose(weightsTransposed);
+			FMatrixRMaj newDelta = new FMatrixRMaj(weightsTransposed.getNumRows(), delta.getNumCols());
+			CommonOps_FDRM.mult(weightsTransposed, delta, newDelta);
+			delta.reshape(sp.getNumRows(), newDelta.getNumCols());
+			CommonOps_FDRM.elementMult(newDelta, sp, delta);
+			nablaB.set(nablaB.size()-i, delta);
+			w = network.getWeightsInLayer(network.getNumberOfLayers()-i-1).copy();
+			activationTransposed = activations.get(activations.size()-i-1);
 			CommonOps_FDRM.transpose(activationTransposed);
 			CommonOps_FDRM.mult(delta, activationTransposed, w);
-			nablaW.set(i,w);
+			nablaW.set(nablaW.size()-i,w);
 		}
 		
 		//Return
-		@SuppressWarnings("unchecked")
-		List<FMatrixRMaj>[] result = (List<FMatrixRMaj>[]) new Object[2];
-		result[0] = nablaB;
-		result[1] = nablaW;
+		List<List<FMatrixRMaj>> result = new ArrayList<List<FMatrixRMaj>>();
+		result.add(nablaB);
+		result.add(nablaW);
 		return result;
 	}
 
