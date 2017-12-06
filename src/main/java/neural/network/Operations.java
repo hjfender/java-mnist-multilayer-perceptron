@@ -145,6 +145,7 @@ public class Operations {
 			entry.zero();
 			nablaB.add(entry);
 		}
+		
 		//Initialize gradient of weights to all zeros
 		List<FMatrixRMaj> nablaW = new ArrayList<FMatrixRMaj>();
 		for(FMatrixRMaj layer : network.getAllWeights()) {
@@ -152,6 +153,7 @@ public class Operations {
 			entry.zero();
 			nablaW.add(entry);
 		}
+		
 		//Backpropogate
 		for(Image img : batch) {
 			//Change in nablaB and nablaW (i.e. Deltas)
@@ -166,6 +168,7 @@ public class Operations {
 				nablaW.set(i, tempNablaW);
 			}
 		}
+		
 		//Update weights and biases
 		for(int i = 0; i < network.getNumberOfLayers()-1; i++) {
 			FMatrixRMaj newBiases = nablaB.get(i).copy();
@@ -193,6 +196,7 @@ public class Operations {
 			entry.zero();
 			nablaB.add(entry);
 		}
+		
 		//Initialize gradient of weights to all zeros
 		List<FMatrixRMaj> nablaW = new ArrayList<FMatrixRMaj>();
 		for(FMatrixRMaj layer : network.getAllWeights()) {
@@ -203,9 +207,15 @@ public class Operations {
 		
 		//Feedforward
 		FMatrixRMaj activation = img.getVector();
+		FMatrixRMaj expected = new FMatrixRMaj(network.getSizeOfLayers().get(network.getNumberOfLayers()-1),1);
+		expected.zero();
+		expected.set(img.getLabel(), 0, 1.0f);
+		
 		List<FMatrixRMaj> activations = new ArrayList<FMatrixRMaj>(); //List to store all the activations, layer by layer
 		activations.add(activation);
+		
 		List<FMatrixRMaj> zs = new ArrayList<FMatrixRMaj>(); //List to store all the z vectors, layer by layer
+		
 		for(int i = 0; i < network.getNumberOfLayers()-1; i++) {
 			FMatrixRMaj z = network.getBiasesInLayer(i).copy();
 			CommonOps_FDRM.multAdd(network.getWeightsInLayer(i), activation, z);
@@ -215,21 +225,18 @@ public class Operations {
 		}
 		
 		//Backward pass
-		FMatrixRMaj y = new FMatrixRMaj(network.getSizeOfLayers().get(network.getNumberOfLayers()-1),1);
-		y.zero();
-		y.set(img.getLabel(), 0, 1.0f);
 		FMatrixRMaj delta = nablaB.get(nablaB.size()-1).copy();
-		CommonOps_FDRM.elementMult(cost_derivative(activations.get(activations.size()-1), y), sigmoid_prime(zs.get(zs.size()-1)), delta);
+		CommonOps_FDRM.elementMult(cost_derivative(activations.get(activations.size()-1), expected), sigmoid_prime(zs.get(zs.size()-1)), delta);
 		FMatrixRMaj deltaCopy = delta.copy(); //otherwise the value in the list changes later
 		nablaB.set(nablaB.size()-1, deltaCopy);
-		FMatrixRMaj w = network.getWeightsInLayer(network.getNumberOfLayers()-2).copy();
-		FMatrixRMaj activationTransposed = activations.get(activations.size()-2);
-		CommonOps_FDRM.transpose(activationTransposed);
-		CommonOps_FDRM.mult(delta, activationTransposed, w);
-		nablaW.set(nablaW.size()-1, w);
+		FMatrixRMaj w1 = network.getWeightsInLayer(network.getNumberOfLayers()-2).copy();
+		FMatrixRMaj aT1 = activations.get(activations.size()-2).copy();
+		CommonOps_FDRM.transpose(aT1);
+		CommonOps_FDRM.mult(delta, aT1, w1);
+		nablaW.set(nablaW.size()-1, w1);
 		
-		for(int i = 2; i < network.getNumberOfLayers(); i++) {
-			FMatrixRMaj sp = sigmoid_prime(zs.get(zs.size()-i));
+		for(int i = 2; i <= nablaB.size(); i++) {
+			FMatrixRMaj sp = sigmoid_prime(zs.get(zs.size()-i)).copy();
 			FMatrixRMaj weightsTransposed = network.getWeightsInLayer(network.getNumberOfLayers()-i).copy();
 			CommonOps_FDRM.transpose(weightsTransposed);
 			FMatrixRMaj newDelta = new FMatrixRMaj(weightsTransposed.getNumRows(), delta.getNumCols());
@@ -237,11 +244,12 @@ public class Operations {
 			delta.reshape(sp.getNumRows(), newDelta.getNumCols());
 			CommonOps_FDRM.elementMult(newDelta, sp, delta);
 			nablaB.set(nablaB.size()-i, delta);
-			w = network.getWeightsInLayer(network.getNumberOfLayers()-i-1).copy();
-			activationTransposed = activations.get(activations.size()-i-1);
-			CommonOps_FDRM.transpose(activationTransposed);
-			CommonOps_FDRM.mult(delta, activationTransposed, w);
-			nablaW.set(nablaW.size()-i,w);
+			
+			FMatrixRMaj wi = network.getWeightsInLayer(network.getNumberOfLayers()-i-1).copy();
+			FMatrixRMaj aTi = activations.get(activations.size()-i-1).copy();
+			CommonOps_FDRM.transpose(aTi);
+			CommonOps_FDRM.mult(delta, aTi, wi);
+			nablaW.set(nablaW.size()-i, wi);
 		}
 		
 		//Return
@@ -289,9 +297,9 @@ public class Operations {
 	 * Return the vector of partial derivatives \partial C_x / \partial a for
 	 * the output activations.
 	 */
-	public static FMatrixRMaj cost_derivative(final FMatrixRMaj output_activations, final FMatrixRMaj y) {
-		FMatrixRMaj result = output_activations.copy();
-		CommonOps_FDRM.subtract(output_activations, y, result);
+	public static FMatrixRMaj cost_derivative(final FMatrixRMaj activation, final FMatrixRMaj expected) {
+		FMatrixRMaj result = activation.copy();
+		CommonOps_FDRM.subtract(activation, expected, result);
 		return result;
 	}
 

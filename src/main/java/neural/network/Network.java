@@ -45,7 +45,7 @@ public class Network {
 			}
 			final FMatrixRMaj layerBias = new FMatrixRMaj(sizeOfLayers.get(i), 1);
 			for(int j = 0; j < layerBias.getNumRows(); j++){
-				layerBias.set(j, 0, (float) GAUSSIAN_GENERATOR.nextGaussian(0,1));
+				layerBias.set(j, 0, (float) GAUSSIAN_GENERATOR.nextGaussian(0, 1));
 			}
 			biases.add(layerBias);
 		}
@@ -61,7 +61,7 @@ public class Network {
 			final FMatrixRMaj layerWeights = new FMatrixRMaj(sizeOfLayers.get(i+1), sizeOfLayers.get(i));
 			for(int j = 0; j < layerWeights.getNumRows(); j++){
 				for(int k = 0; k < layerWeights.getNumCols(); k++) {
-					layerWeights.set(j, k, (float) GAUSSIAN_GENERATOR.nextGaussian(0,1));
+					layerWeights.set(j, k, (float) GAUSSIAN_GENERATOR.nextGaussian(0, 1));
 				}
 			}
 			weights.add(layerWeights);
