@@ -1,5 +1,7 @@
 package neural.network.data;
 
+import org.ejml.data.FMatrixRMaj;
+
 public class Image {
 
 	private final int label;
@@ -20,6 +22,14 @@ public class Image {
 	
 	public int[] getData() {
 		return data;
+	}
+	
+	public FMatrixRMaj getVector() {
+		FMatrixRMaj v = new FMatrixRMaj(data.length, 1);
+		for(int i = 0; i < data.length; i++) {
+			v.set(i, 0, data[i]);
+		}
+		return v;
 	}
 	
 }
